@@ -11,6 +11,27 @@
   =========================*/
 int server_setup() {
   int from_client = 0;
+
+  int error = mkfifo("WKP", 0650);
+  if(error < 0) {
+    perror("mkfifo failed");
+    exit(2);
+  }
+  int fd = open("WKP", O_WRONLY, 0650);
+
+  char buffer[BUFFER_SIZE];
+  int bytes = read(fd, buffer, BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("read failed");
+    exit(1);
+  }
+
+  from_client = atoi(buffer);
+  error = unlink("WKP");
+  if (error < 0) {
+    perror("unlink failed");
+    exit(3);
+  }
   return from_client;
 }
 
@@ -26,16 +47,18 @@ int server_setup() {
 int server_handshake(int *to_client) {
   int from_client;
 
+  server_setup();
+
   char pidBuffer[10];
   int pid = getpid();
   snprintf(pidBuffer, sizeof(pid), "%d", pid);
   int bytes = write(*to_client, pidBuffer, strlen(pidBuffer));
   if (bytes < 0) {
     perror("write failed");
-    exit(1);
+    exit(2);
   }
 
-  
+
 
   return from_client;
 }
