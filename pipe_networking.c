@@ -49,20 +49,33 @@ int server_handshake(int *to_client) {
 
   // subserver
 
+  int fds[2];
+  if(pipe(fds) < 0) {
+    perror("piping failed");
+    exit(4);
+  }
 
+  int randInt;
+  int bytes;
+
+  int rfd = open("dev/urandom/", O_RDONLY);
+  bytes = read(rfd, &randInt, sizeof(int));
 
   char buffer[HANDSHAKE_BUFFER_SIZE];
-  srand(time(NULL));
-  int randInt = rand();
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
-  int bytes = write(asdfasdf), pidBuffer, strlen(pidBuffer));
+  bytes = write(fds[1], buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
     perror("write failed");
     exit(2);
   }
 
-  bytes = read(*to_client)
+  bytes = read(fds[0], buffer, HANDSHAKE_BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("read failed");
+    exit(1);
+  }
 
+  to_client = &fds[1];
   return from_client;
 }
 
