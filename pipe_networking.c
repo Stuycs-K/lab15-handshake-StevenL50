@@ -12,12 +12,12 @@
 int server_setup() {
   int from_client = 0;
 
-  int error = mkfifo("WKP", 0650);
+  int error = mkfifo(WKP, 0650);
   if(error < 0) {
     perror("mkfifo failed");
     exit(2);
   }
-  int fd = open("WKP", O_WRONLY, 0650);
+  int fd = open(WKP, O_WRONLY, 0650);
 
   char buffer[BUFFER_SIZE];
   int bytes = read(fd, buffer, BUFFER_SIZE);
@@ -27,7 +27,7 @@ int server_setup() {
   }
 
   from_client = atoi(buffer);
-  error = unlink("WKP");
+  error = unlink(WKP);
   if (error < 0) {
     perror("unlink failed");
     exit(3);
@@ -45,20 +45,23 @@ int server_setup() {
   returns the file descriptor for the upstream pipe (see server setup).
   =========================*/
 int server_handshake(int *to_client) {
-  int from_client;
+  int from_client = server_setup();
 
-  server_setup();
+  // subserver
 
-  char pidBuffer[10];
-  int pid = getpid();
-  snprintf(pidBuffer, sizeof(pid), "%d", pid);
-  int bytes = write(*to_client, pidBuffer, strlen(pidBuffer));
+
+
+  char buffer[HANDSHAKE_BUFFER_SIZE];
+  srand(time(NULL));
+  int randInt = rand();
+  snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
+  int bytes = write(asdfasdf), pidBuffer, strlen(pidBuffer));
   if (bytes < 0) {
     perror("write failed");
     exit(2);
   }
 
-
+  bytes = read(*to_client)
 
   return from_client;
 }
