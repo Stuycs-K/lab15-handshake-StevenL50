@@ -15,7 +15,7 @@ int server_setup() {
 }
 
 /*=========================
-  server_handshake 
+  server_handshake
   args: int * to_client
 
   Performs the server side pipe 3 way handshake.
@@ -25,6 +25,18 @@ int server_setup() {
   =========================*/
 int server_handshake(int *to_client) {
   int from_client;
+
+  char pidBuffer[10];
+  int pid = getpid();
+  snprintf(pidBuffer, sizeof(pid), "%d", pid);
+  int bytes = write(*to_client, pidBuffer, strlen(pidBuffer));
+  if (bytes < 0) {
+    perror("write failed");
+    exit(1);
+  }
+
+  
+
   return from_client;
 }
 
@@ -56,5 +68,3 @@ int server_connect(int from_client) {
   int to_client  = 0;
   return to_client;
 }
-
-
