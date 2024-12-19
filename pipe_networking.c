@@ -49,12 +49,6 @@ int server_handshake(int *to_client) {
 
   // subserver
 
-  int fds[2];
-  if(pipe(fds) < 0) {
-    perror("piping failed");
-    exit(4);
-  }
-
   int randInt;
   int bytes;
 
@@ -90,7 +84,30 @@ int server_handshake(int *to_client) {
   returns the file descriptor for the downstream pipe.
   =========================*/
 int client_handshake(int *to_server) {
-  int from_server;
+  int fds[2];
+  if(pipe(fds) < 0) {
+    perror("piping failed");
+    exit(4);
+  }
+
+  int bytes;
+  int pid = getpid();
+
+  char buffer[HANDSHAKE_BUFFER_SIZE];
+  snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", pid);
+  bytes = write(from_server, buffer, HANDSHAKE_BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("write failed");
+    exit(2);
+  }
+
+  bytes = read(fds[0], buffer, HANDSHAKE_BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("read failed");
+    exit(1);
+  }
+
+  to_server = &fds[1];
   return from_server;
 }
 
