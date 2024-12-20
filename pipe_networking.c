@@ -13,11 +13,7 @@ int server_setup() {
   int from_client = 0;
 
   int error = mkfifo(WKP, 0650);
-  if(error < 0) {
-    perror("mkfifo failed");
-    exit(2);
-  }
-  int fd = open(WKP, O_WRONLY, 0650);
+  int fd = open(WKP, O_RDONLY, 0650);
 
   char buffer[BUFFER_SIZE];
   int bytes = read(fd, buffer, BUFFER_SIZE);
@@ -45,31 +41,41 @@ int server_setup() {
   returns the file descriptor for the upstream pipe (see server setup).
   =========================*/
 int server_handshake(int *to_client) {
-  int from_client = server_setup();
+  // client -> server, RD
+  int from_client = server_setup(); // also the pid
 
   // subserver
 
   int randInt;
   int bytes;
 
+  char buffer[HANDSHAKE_BUFFER_SIZE];
+
   int rfd = open("dev/urandom/", O_RDONLY);
   bytes = read(rfd, &randInt, sizeof(int));
-
-  char buffer[HANDSHAKE_BUFFER_SIZE];
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
-  bytes = write(fds[1], buffer, HANDSHAKE_BUFFER_SIZE);
+  close(rfd);
+
+  // server -> client, WR
+  bytes = write(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
     perror("write failed");
     exit(2);
   }
 
-  bytes = read(fds[0], buffer, HANDSHAKE_BUFFER_SIZE);
+  // client -> server, RD
+  bytes = read(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
-    perror("read failed");
+    perror("write failed");
+    exit(2);
+  }
+  if(atoi(buffer) != from_client+1) {
+    printf("SOMETHING WENT WRONG\n");
     exit(1);
   }
 
-  to_client = &fds[1];
+  printf("HANDSHAKE COMPLETE\n");
+
   return from_client;
 }
 
@@ -84,30 +90,59 @@ int server_handshake(int *to_client) {
   returns the file descriptor for the downstream pipe.
   =========================*/
 int client_handshake(int *to_server) {
-  int fds[2];
-  if(pipe(fds) < 0) {
-    perror("piping failed");
-    exit(4);
-  }
-
   int bytes;
   int pid = getpid();
 
   char buffer[HANDSHAKE_BUFFER_SIZE];
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", pid);
-  bytes = write(from_server, buffer, HANDSHAKE_BUFFER_SIZE);
+
+  mkfifo(buffer, 0650) < 0;
+
+  int fdWKP = open(WKP, O_WRONLY, 0650);
+  int from_server = open(buffer, O_RDONLY, 0650);
+
+  // client -> server, WR
+  bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
     perror("write failed");
     exit(2);
   }
 
-  bytes = read(fds[0], buffer, HANDSHAKE_BUFFER_SIZE);
+  // server -> client, RD
+  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
     perror("read failed");
     exit(1);
   }
 
-  to_server = &fds[1];
+  int error = unlink(from_server);
+  if (error < 0) {
+    perror("unlink failed");
+    exit(3);
+  }
+
+  // client -> server, WR
+  int randInt = atoi(buffer);
+  snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt+1);
+  bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("write failed");
+    exit(2);
+  }
+
+  // server -> client, RD
+  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("read failed");
+    exit(1);
+  }
+
+  if(atoi(buffer) != randInt+1) {
+    printf("SOMETHING WENT WRONG\n");
+    exit(1);
+  }
+
+  to_server = &fdWKP;
   return from_server;
 }
 
