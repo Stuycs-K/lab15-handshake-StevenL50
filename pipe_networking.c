@@ -56,6 +56,8 @@ int server_handshake(int *to_client) {
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
   close(rfd);
 
+  printf("random number 1: %d\n", randInt); // DEBUG
+
   // server -> client, WR
   bytes = write(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
@@ -63,12 +65,17 @@ int server_handshake(int *to_client) {
     exit(2);
   }
 
+  printf("random number 2: %s\n", buffer); // DEBUG
+
   // client -> server, RD
   bytes = read(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
     perror("write failed");
     exit(2);
   }
+
+  printf("pid+1: %s\n", buffer); // DEBUG
+
   if(atoi(buffer) != from_client+1) {
     printf("SOMETHING WENT WRONG\n");
     exit(1);
@@ -96,10 +103,17 @@ int client_handshake(int *to_server) {
   char buffer[HANDSHAKE_BUFFER_SIZE];
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", pid);
 
-  mkfifo(buffer, 0650) < 0;
+  mkfifo(buffer, 0650);
+
+  printf("pid: %s\n", buffer); // DEBUG
 
   int fdWKP = open(WKP, O_WRONLY, 0650);
+
+  printf("WKP fd: %d\n", fdWKP); // DEBUG
+
   int from_server = open(buffer, O_RDONLY, 0650);
+
+  printf("from_server fd: %d\n", from_server); // DEBUG
 
   // client -> server, WR
   bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE);
@@ -108,6 +122,8 @@ int client_handshake(int *to_server) {
     exit(2);
   }
 
+  printf("WKP fd 2: %s\n", buffer); // DEBUG
+
   // server -> client, RD
   bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
@@ -115,14 +131,17 @@ int client_handshake(int *to_server) {
     exit(1);
   }
 
-  int error = unlink(from_server);
+  printf("randInt: %s\n", buffer); // DEBUG
+
+  int randInt = atoi(buffer);
+  snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", pid);
+  int error = unlink(buffer);
   if (error < 0) {
     perror("unlink failed");
     exit(3);
   }
 
   // client -> server, WR
-  int randInt = atoi(buffer);
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt+1);
   bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
