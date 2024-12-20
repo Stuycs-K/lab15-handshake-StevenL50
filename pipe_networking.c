@@ -111,7 +111,7 @@ int client_handshake(int *to_server) {
 
   printf("WKP fd: %d\n", fdWKP); // DEBUG
 
-  int from_server = open(buffer, O_RDONLY, 0650);
+  int from_server = open(WKP, O_RDONLY, 0650);
 
   printf("from_server fd: %d\n", from_server); // DEBUG
 
