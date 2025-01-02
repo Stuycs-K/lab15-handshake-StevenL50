@@ -10,19 +10,18 @@
   returns the file descriptor for the upstream pipe.
   =========================*/
 int server_setup() {
-  int from_client = 0;
 
   int error = mkfifo(WKP, 0650);
-  int fd = open(WKP, O_RDONLY, 0650);
+  int from_client = open(WKP, O_RDONLY, 0650);
 
   char buffer[BUFFER_SIZE];
-  int bytes = read(fd, buffer, BUFFER_SIZE);
+  int bytes = read(from_client, buffer, BUFFER_SIZE);
   if (bytes < 0) {
     perror("read failed");
     exit(1);
   }
 
-  from_client = atoi(buffer);
+  // from_client = atoi(buffer);
   error = unlink(WKP);
   if (error < 0) {
     perror("unlink failed");
@@ -105,15 +104,15 @@ int client_handshake(int *to_server) {
 
   mkfifo(buffer, 0650); // create PP
 
-  printf("pid: %s\n", buffer); // DEBUG
+  printf("private pipe: %s\n", buffer); // DEBUG
 
   int fdWKP = open(WKP, O_WRONLY, 0650);
 
-  printf("WKP fd: %d\n", fdWKP); // DEBUG
+  printf("WKP: %d\n", fdWKP); // DEBUG
 
   int from_server = open(buffer, O_RDONLY, 0650);
 
-  printf("from_server fd: %d\n", from_server); // DEBUG
+  printf("from_server (pp) fd: %d\n", from_server); // DEBUG
 
   // client -> server, WR
   bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE); // write PP to server
