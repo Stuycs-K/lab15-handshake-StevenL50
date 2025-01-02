@@ -103,7 +103,7 @@ int client_handshake(int *to_server) {
   char buffer[HANDSHAKE_BUFFER_SIZE];
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", pid);
 
-  mkfifo(buffer, 0650);
+  mkfifo(buffer, 0650); // create PP
 
   printf("pid: %s\n", buffer); // DEBUG
 
@@ -111,21 +111,21 @@ int client_handshake(int *to_server) {
 
   printf("WKP fd: %d\n", fdWKP); // DEBUG
 
-  int from_server = open(WKP, O_RDONLY, 0650);
+  int from_server = open(buffer, O_RDONLY, 0650);
 
   printf("from_server fd: %d\n", from_server); // DEBUG
 
   // client -> server, WR
-  bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE);
+  bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE); // write PP to server
   if (bytes < 0) {
     perror("write failed");
     exit(2);
   }
 
-  printf("WKP fd 2: %s\n", buffer); // DEBUG
+  printf("pid: %s\n", buffer); // DEBUG
 
   // server -> client, RD
-  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE);
+  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE); // read randInt from server
   if (bytes < 0) {
     perror("read failed");
     exit(1);
@@ -143,14 +143,14 @@ int client_handshake(int *to_server) {
 
   // client -> server, WR
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt+1);
-  bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE);
+  bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE); // write randInt+1 to server
   if (bytes < 0) {
     perror("write failed");
     exit(2);
   }
 
   // server -> client, RD
-  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE);
+  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE); // 
   if (bytes < 0) {
     perror("read failed");
     exit(1);
