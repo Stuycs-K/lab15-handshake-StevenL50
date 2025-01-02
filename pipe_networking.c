@@ -10,18 +10,9 @@
   returns the file descriptor for the upstream pipe.
   =========================*/
 int server_setup() {
-
   int error = mkfifo(WKP, 0650);
   int from_client = open(WKP, O_RDONLY, 0650);
 
-  char buffer[BUFFER_SIZE];
-  int bytes = read(from_client, buffer, BUFFER_SIZE);
-  if (bytes < 0) {
-    perror("read failed");
-    exit(1);
-  }
-
-  // from_client = atoi(buffer);
   error = unlink(WKP);
   if (error < 0) {
     perror("unlink failed");
@@ -41,24 +32,39 @@ int server_setup() {
   =========================*/
 int server_handshake(int *to_client) {
   // client -> server, RD
-  int from_client = server_setup(); // also the pid
+  int from_client = server_setup(); // wkp fd
+
+  char buffer[BUFFER_SIZE];
+  int bytes = read(from_client, buffer, BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("read failed");
+    exit(1);
+  }
 
   // subserver
 
+  printf("HIT!\n"); // DEBUG
+
+  printf("pid: %s\n", buffer); // DEBUG
+
+  int cfd = open(buffer, O_WRONLY, 650);
+
+  printf("pp opened!\n"); // DEBUG
+
   int randInt;
-  int bytes;
-
-  char buffer[HANDSHAKE_BUFFER_SIZE];
-
-  int rfd = open("dev/urandom/", O_RDONLY);
-  bytes = read(rfd, &randInt, sizeof(int));
+  int rfd = open("/dev/urandom", O_RDONLY);
+  bytes = read(rfd, &randInt, sizeof(short));
+  if (bytes < 0) {
+    perror("write failed");
+    exit(2);
+  }
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
   close(rfd);
 
   printf("random number 1: %d\n", randInt); // DEBUG
 
   // server -> client, WR
-  bytes = write(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
+  bytes = write(cfd, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
     perror("write failed");
     exit(2);
@@ -73,15 +79,15 @@ int server_handshake(int *to_client) {
     exit(2);
   }
 
-  printf("pid+1: %s\n", buffer); // DEBUG
+  printf("randInt+1: %s\n", buffer); // DEBUG
 
-  if(atoi(buffer) != from_client+1) {
+  if(atoi(buffer) != randInt+1) {
     printf("SOMETHING WENT WRONG\n");
     exit(1);
   }
 
   printf("HANDSHAKE COMPLETE\n");
-
+  to_client = &cfd;
   return from_client;
 }
 
@@ -110,10 +116,6 @@ int client_handshake(int *to_server) {
 
   printf("WKP: %d\n", fdWKP); // DEBUG
 
-  int from_server = open(buffer, O_RDONLY, 0650);
-
-  printf("from_server (pp) fd: %d\n", from_server); // DEBUG
-
   // client -> server, WR
   bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE); // write PP to server
   if (bytes < 0) {
@@ -122,6 +124,10 @@ int client_handshake(int *to_server) {
   }
 
   printf("pid: %s\n", buffer); // DEBUG
+
+  int from_server = open(buffer, O_RDONLY, 0650);
+
+  printf("from_server (pp) fd: %d\n", from_server); // DEBUG
 
   // server -> client, RD
   bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE); // read randInt from server
@@ -149,7 +155,7 @@ int client_handshake(int *to_server) {
   }
 
   // server -> client, RD
-  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE); // 
+  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE); //
   if (bytes < 0) {
     perror("read failed");
     exit(1);

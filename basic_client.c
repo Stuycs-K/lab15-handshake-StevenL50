@@ -6,5 +6,5 @@ int main() {
   int from_server;
 
   from_server = client_handshake( &to_server );
-  printf("to_server: %d ||||| from_server: %d", to_server, from_server);
+  printf("to_server: %d ||||| from_server: %d\n", to_server, from_server);
 }
