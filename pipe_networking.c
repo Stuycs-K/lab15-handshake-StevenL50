@@ -43,8 +43,6 @@ int server_handshake(int *to_client) {
 
   // subserver
 
-  printf("HIT!\n"); // DEBUG
-
   printf("pid: %s\n", buffer); // DEBUG
 
   int cfd = open(buffer, O_WRONLY, 650);
@@ -156,6 +154,8 @@ int client_handshake(int *to_server) {
     exit(2);
   }
 
+  printf("HANDSHAKE COMPLETE\n");
+  
 	// to_server = malloc(sizeof(int));
   // *to_server = fdWKP;
   *to_server = fdWKP;
