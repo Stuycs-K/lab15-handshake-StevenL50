@@ -1,4 +1,11 @@
 #include "pipe_networking.h"
+
+static void sighandler(int signo) {
+  if (signo == SIGINT) {
+    unlink(WKP);
+  }
+}
+
 //UPSTREAM = to the server / from the client
 //DOWNSTREAM = to the client / from the server
 /*=========================
@@ -10,6 +17,7 @@
   returns the file descriptor for the upstream pipe.
   =========================*/
 int server_setup() {
+  signal(SIGINT, sighandler);
   int error = mkfifo(WKP, 0650);
   int from_client = open(WKP, O_RDONLY, 0650);
 
@@ -43,11 +51,11 @@ int server_handshake(int *to_client) {
 
   // subserver
 
-  printf("pid: %s\n", buffer); // DEBUG
+  // printf("pid: %s\n", buffer); // DEBUG
 
   int cfd = open(buffer, O_WRONLY, 650);
 
-  printf("pp opened!\n"); // DEBUG
+  // printf("pp opened!\n"); // DEBUG
 
   short randInt;
   int rfd = open("/dev/urandom", O_RDONLY);
@@ -59,7 +67,7 @@ int server_handshake(int *to_client) {
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
   close(rfd);
 
-  printf("random number 1: %d\n", randInt); // DEBUG
+  // printf("random number 1: %d\n", randInt); // DEBUG
 
   // server -> client, WR
   bytes = write(cfd, buffer, HANDSHAKE_BUFFER_SIZE);
@@ -68,7 +76,7 @@ int server_handshake(int *to_client) {
     exit(2);
   }
 
-  printf("random number 2: %s\n", buffer); // DEBUG
+  // printf("random number 2: %s\n", buffer); // DEBUG
 
   // client -> server, RD
   bytes = read(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
@@ -77,14 +85,14 @@ int server_handshake(int *to_client) {
     exit(2);
   }
 
-  printf("randInt+1: %s\n", buffer); // DEBUG
+  // printf("randInt+1: %s\n", buffer); // DEBUG
 
   if(atoi(buffer) != randInt+1) {
-    printf("HANDSHAKE FAILED\n");
+    perror("HANDSHAKE FAILED\n");
     exit(1);
   }
 
-  printf("HANDSHAKE COMPLETE\n");
+  // printf("HANDSHAKE COMPLETE\n");
   // to_client = malloc(sizeof(int));
   // *to_client = cfd;
   *to_client = cfd;
@@ -110,11 +118,11 @@ int client_handshake(int *to_server) {
 
   mkfifo(buffer, 0650); // create PP
 
-  printf("private pipe: %s\n", buffer); // DEBUG
+  // printf("private pipe: %s\n", buffer); // DEBUG
 
   int fdWKP = open(WKP, O_WRONLY, 0650);
 
-  printf("WKP: %d\n", fdWKP); // DEBUG
+  // printf("WKP: %d\n", fdWKP); // DEBUG
 
   // client -> server, WR
   bytes = write(fdWKP, buffer, HANDSHAKE_BUFFER_SIZE); // write PP to server
@@ -123,11 +131,11 @@ int client_handshake(int *to_server) {
     exit(2);
   }
 
-  printf("pid: %s\n", buffer); // DEBUG
+  // printf("pid: %s\n", buffer); // DEBUG
 
   int from_server = open(buffer, O_RDONLY, 0650);
 
-  printf("from_server (pp) fd: %d\n", from_server); // DEBUG
+  // printf("from_server (pp) fd: %d\n", from_server); // DEBUG
 
   // server -> client, RD
   bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE); // read randInt from server
@@ -136,7 +144,7 @@ int client_handshake(int *to_server) {
     exit(1);
   }
 
-  printf("randInt: %s\n", buffer); // DEBUG
+  // printf("randInt: %s\n", buffer); // DEBUG
 
   int randInt = atoi(buffer);
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", pid);
@@ -154,8 +162,8 @@ int client_handshake(int *to_server) {
     exit(2);
   }
 
-  printf("HANDSHAKE COMPLETE\n");
-  
+  // printf("HANDSHAKE COMPLETE\n");
+
 	// to_server = malloc(sizeof(int));
   // *to_server = fdWKP;
   *to_server = fdWKP;
