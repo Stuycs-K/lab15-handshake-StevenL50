@@ -34,8 +34,8 @@ int server_handshake(int *to_client) {
   // client -> server, RD
   int from_client = server_setup(); // wkp fd
 
-  char buffer[BUFFER_SIZE];
-  int bytes = read(from_client, buffer, BUFFER_SIZE);
+  char buffer[HANDSHAKE_BUFFER_SIZE];
+  int bytes = read(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
   if (bytes < 0) {
     perror("read failed");
     exit(1);
@@ -51,12 +51,12 @@ int server_handshake(int *to_client) {
 
   printf("pp opened!\n"); // DEBUG
 
-  int randInt;
+  short randInt;
   int rfd = open("/dev/urandom", O_RDONLY);
   bytes = read(rfd, &randInt, sizeof(short));
   if (bytes < 0) {
-    perror("write failed");
-    exit(2);
+    perror("read failed");
+    exit(1);
   }
   snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
   close(rfd);
@@ -82,12 +82,14 @@ int server_handshake(int *to_client) {
   printf("randInt+1: %s\n", buffer); // DEBUG
 
   if(atoi(buffer) != randInt+1) {
-    printf("SOMETHING WENT WRONG\n");
+    printf("HANDSHAKE FAILED\n");
     exit(1);
   }
 
   printf("HANDSHAKE COMPLETE\n");
-  to_client = &cfd;
+  // to_client = malloc(sizeof(int));
+  // *to_client = cfd;
+  *to_client = cfd;
   return from_client;
 }
 
@@ -154,19 +156,9 @@ int client_handshake(int *to_server) {
     exit(2);
   }
 
-  // server -> client, RD
-  bytes = read(from_server, buffer, HANDSHAKE_BUFFER_SIZE); //
-  if (bytes < 0) {
-    perror("read failed");
-    exit(1);
-  }
-
-  if(atoi(buffer) != randInt+1) {
-    printf("SOMETHING WENT WRONG\n");
-    exit(1);
-  }
-
-  to_server = &fdWKP;
+	// to_server = malloc(sizeof(int));
+  // *to_server = fdWKP;
+  *to_server = fdWKP;
   return from_server;
 }
 
