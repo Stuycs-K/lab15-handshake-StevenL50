@@ -3,6 +3,7 @@
 static void sighandler(int signo) {
   if (signo == SIGINT) {
     unlink(WKP);
+    exit(0);
   }
 }
 
@@ -26,74 +27,6 @@ int server_setup() {
     perror("unlink failed");
     exit(3);
   }
-  return from_client;
-}
-
-/*=========================
-  server_handshake
-  args: int * to_client
-
-  Performs the server side pipe 3 way handshake.
-  Sets *to_client to the file descriptor to the downstream pipe (Client's private pipe).
-
-  returns the file descriptor for the upstream pipe (see server setup).
-  =========================*/
-int server_handshake(int *to_client) {
-  // client -> server, RD
-  int from_client = server_setup(); // wkp fd
-
-  char buffer[HANDSHAKE_BUFFER_SIZE];
-  int bytes = read(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
-  if (bytes < 0) {
-    perror("read failed");
-    exit(1);
-  }
-
-  // printf("pid: %s\n", buffer); // DEBUG
-
-  int cfd = open(buffer, O_WRONLY, 650);
-
-  // printf("pp opened!\n"); // DEBUG
-
-  short randInt;
-  int rfd = open("/dev/urandom", O_RDONLY);
-  bytes = read(rfd, &randInt, sizeof(short));
-  if (bytes < 0) {
-    perror("read failed");
-    exit(1);
-  }
-  snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
-  close(rfd);
-
-  // printf("random number 1: %d\n", randInt); // DEBUG
-
-  // server -> client, WR
-  bytes = write(cfd, buffer, HANDSHAKE_BUFFER_SIZE);
-  if (bytes < 0) {
-    perror("write failed");
-    exit(2);
-  }
-
-  // printf("random number 2: %s\n", buffer); // DEBUG
-
-  // client -> server, RD
-  bytes = read(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
-  if (bytes < 0) {
-    perror("write failed");
-    exit(2);
-  }
-
-  // printf("randInt+1: %s\n", buffer); // DEBUG
-
-  if(atoi(buffer) != randInt+1) {
-    perror("HANDSHAKE FAILED\n");
-    exit(1);
-  }
-
-  // printf("HANDSHAKE COMPLETE\n");
-  // to_client = malloc(sizeof(int));
-  // *to_client = cfd;
-  *to_client = cfd;
   return from_client;
 }
 
@@ -151,6 +84,21 @@ int server_handshake_half(int *to_client, int from_client) {
   // *to_client = cfd;
   *to_client = cfd;
   return from_client;
+}
+
+/*=========================
+  server_handshake
+  args: int * to_client
+
+  Performs the server side pipe 3 way handshake.
+  Sets *to_client to the file descriptor to the downstream pipe (Client's private pipe).
+
+  returns the file descriptor for the upstream pipe (see server setup).
+  =========================*/
+int server_handshake(int *to_client) {
+  // client -> server, RD
+  int from_client = server_setup(); // wkp fd
+  return server_handshake_half(to_client, from_client);
 }
 
 

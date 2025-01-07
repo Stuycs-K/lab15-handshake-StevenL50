@@ -1,29 +1,25 @@
 #include "pipe_networking.h"
 
 void subserver(int from_client, int to_client) {
-  char message[BUFFER_SIZE];
-  snprintf(message, BUFFER_SIZE, "INTERCONNECTIVITY");
-
   char buffer[BUFFER_SIZE];
   int bytes;
+  int pid;
   while(1) {
-    bytes = write(to_client, message, BUFFER_SIZE);
-    if (bytes == 0) {
-      printf("Client stopped connection\n");
-      exit(0);
-    }
- 	  if (bytes < 0) {
- 	  	perror("write failed");
- 	  	exit(1);
- 	  }
-    printf("Sent message %s to client\n", message);
-
     bytes = read(from_client, buffer, BUFFER_SIZE);
     if (bytes < 0) {
 	  	perror("read failed");
 	  	exit(1);
 	  }
     printf("Received pid %s from client\n", buffer);
+    pid = atoi(buffer);
+
+    snprintf(buffer, BUFFER_SIZE, "=== VERIFIED %d ===", pid);
+    bytes = write(to_client, buffer, BUFFER_SIZE);
+ 	  if (bytes < 0) {
+ 	  	perror("write failed");
+ 	  	exit(1);
+ 	  }
+    printf("Sent message %s to client\n", buffer);
  	  sleep(1);
   }
 }

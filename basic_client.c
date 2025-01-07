@@ -10,12 +10,6 @@ int main() {
   int num = getpid();
   int bytes;
   while(1) {
-    bytes = read(from_server, buffer, BUFFER_SIZE);
-    if (bytes < 0) {
-	  	perror("read failed");
-	  	exit(1);
-	  }
-    printf("Received message %s from server\n", buffer);
 
 		snprintf(buffer, BUFFER_SIZE, "%d", num);
  	  bytes = write(to_server, buffer, BUFFER_SIZE);
@@ -28,6 +22,13 @@ int main() {
  	  	exit(1);
  	  }
     printf("Sent pid %d to server\n", num);
+
+    bytes = read(from_server, buffer, BUFFER_SIZE);
+    if (bytes < 0) {
+	  	perror("read failed");
+	  	exit(1);
+	  }
+    printf("Received message %s from server\n", buffer);
  	  sleep(1);
   }
 }
