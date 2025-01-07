@@ -10,6 +10,9 @@ void subserver(int from_client, int to_client) {
 	  	perror("read failed");
 	  	exit(1);
 	  }
+    if (bytes == 0) {
+      exit(0);
+    }
     printf("Received pid %s from client\n", buffer);
     pid = atoi(buffer);
 
@@ -19,7 +22,7 @@ void subserver(int from_client, int to_client) {
  	  	perror("write failed");
  	  	exit(1);
  	  }
-    printf("Sent message %s to client\n", buffer);
+    printf("Sent message %s to client\n\n", buffer);
  	  sleep(1);
   }
 }

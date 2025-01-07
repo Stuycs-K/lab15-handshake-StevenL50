@@ -181,7 +181,7 @@ int client_handshake(int *to_server) {
 
   returns the file descriptor for the downstream pipe.
   =========================*/
-int server_connect(int from_client) {
-  int to_client  = 0;
-  return to_client;
-}
+// int server_connect(int from_client) {
+//   int to_client  = 0;
+//   return to_client;
+// }
