@@ -49,7 +49,61 @@ int server_handshake(int *to_client) {
     exit(1);
   }
 
-  // subserver
+  // printf("pid: %s\n", buffer); // DEBUG
+
+  int cfd = open(buffer, O_WRONLY, 650);
+
+  // printf("pp opened!\n"); // DEBUG
+
+  short randInt;
+  int rfd = open("/dev/urandom", O_RDONLY);
+  bytes = read(rfd, &randInt, sizeof(short));
+  if (bytes < 0) {
+    perror("read failed");
+    exit(1);
+  }
+  snprintf(buffer, HANDSHAKE_BUFFER_SIZE, "%d", randInt);
+  close(rfd);
+
+  // printf("random number 1: %d\n", randInt); // DEBUG
+
+  // server -> client, WR
+  bytes = write(cfd, buffer, HANDSHAKE_BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("write failed");
+    exit(2);
+  }
+
+  // printf("random number 2: %s\n", buffer); // DEBUG
+
+  // client -> server, RD
+  bytes = read(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("write failed");
+    exit(2);
+  }
+
+  // printf("randInt+1: %s\n", buffer); // DEBUG
+
+  if(atoi(buffer) != randInt+1) {
+    perror("HANDSHAKE FAILED\n");
+    exit(1);
+  }
+
+  // printf("HANDSHAKE COMPLETE\n");
+  // to_client = malloc(sizeof(int));
+  // *to_client = cfd;
+  *to_client = cfd;
+  return from_client;
+}
+
+int server_handshake_half(int *to_client, int from_client) {
+  char buffer[HANDSHAKE_BUFFER_SIZE];
+  int bytes = read(from_client, buffer, HANDSHAKE_BUFFER_SIZE);
+  if (bytes < 0) {
+    perror("read failed");
+    exit(1);
+  }
 
   // printf("pid: %s\n", buffer); // DEBUG
 
